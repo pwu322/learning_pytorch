@@ -13,11 +13,11 @@ urllib.request.install_opener(opener)
 # peprare data set
 trainset = datasets.MNIST(root='./data', train=True, download=False, transform=transforms.Compose([transforms.ToTensor()]))
 testset = datasets.MNIST(root = './data', train = False, download =False, transform = transforms.Compose([transforms.ToTensor()]))
-valset , testset = torch.utils.data.random_split(testset,[int(0.9*len(testset)), int(0.1*len(testset))])
+valset , testset0 = torch.utils.data.random_split(testset,[int(0.9*len(testset)), int(0.1*len(testset))])
 
 train_dataloader = torch.utils.data.DataLoader(trainset, batch_size=64, shuffle=True)
 val_dataloader = torch.utils.data.DataLoader(valset, batch_size=32, shuffle=False)
-test_dataloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False)
+test_dataloader = torch.utils.data.DataLoader(testset0, batch_size=1, shuffle=False)
 
 # visualize data
 fig = plt.figure(figsize=(20,10))
@@ -36,7 +36,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 if(torch.cuda.is_available()):
     model.cuda()
 
-no_epochs = 100
+no_epochs = 10
 train_loss = list()
 val_loss = list()
 best_val_loss = 1
@@ -56,7 +56,7 @@ for epoch in range(no_epochs):
 
         optimizer.zero_grad()             # zero out the optimizer gradients
 
-        pred = model(image)               # prediction for betch
+        pred = model(image)               # prediction for batch
 
         loss = criterion(pred, label)
         total_train_loss += loss.item()
@@ -125,15 +125,17 @@ for itr, (image, label) in enumerate(test_dataloader):
         for i, p in enumerate(pred):
             if label[i] == torch.max(p.data, 0)[1]:
                 total = total + 1
-                results.append((image, torch.max(p.data, 0)[1]))
-        
-    test_accuracy = total / len(itr + 1)
-    print('Test accuracy: {:.8f}, val Loss: {:.8f}'.format(test_accuracy))
+                results.append((image, torch.max(p.data, 0)[1]))    # result is a  list of tuple of image and predicted label
+                print(label[i])
+                print(torch.max(p.data, 0)[1])
+                print(image.size())
+test_accuracy = total / (itr + 1)
+print('Test accuracy: {:.8f}'.format(test_accuracy))
 
 # visualize results
 fig=plt.figure(figsize=(20, 10))
 for i in range(1, 11):
-    img = transforms.ToPILImage(mode='L')(results[i][0].squeeze(0).detach().cpu())
+    img = transforms.ToPILImage(mode='L')(results[i][0][0].squeeze(0).detach().cpu())
     fig.add_subplot(2, 5, i)
     plt.title(results[i][1].item())
     plt.imshow(img)
